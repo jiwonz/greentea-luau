@@ -1,5 +1,5 @@
 # 🍵 greentea-luau
-An experimental runtime typechecker for Luau, with matching 'tooling-time' Luau types.
+An experimental runtime typechecker for **Luau**, with matching 'tooling-time' Luau types.
 
 This project is fork of [GreenTea](https://github.com/Corecii/GreenTea).
 
