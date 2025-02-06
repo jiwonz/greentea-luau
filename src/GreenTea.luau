@@ -215,7 +215,7 @@ end
 
 local Cause = {}
 
-local function causeFormatErr(self: Cause, ...: any)
+local function causeFormatErr(self: Cause)
 	if self.ok then
 		return "ok"
 	else
@@ -495,14 +495,8 @@ end
 
 local isStringUnicode
 
-if utf8.graphemes then
-	function isStringUnicode(str: string)
-		return pcall(utf8.graphemes, str) == true
-	end
-else
-	function isStringUnicode(str: string)
-		return utf8.len(str) ~= nil
-	end
+function isStringUnicode(str: string)
+	return utf8.len(str) ~= nil
 end
 
 local function truncate(count: number, str: string)
@@ -514,25 +508,12 @@ local function truncate(count: number, str: string)
 		return str
 	end
 
-	if not utf8.graphemes then
-		local offset = utf8.offset(str, count + 1)
-		if not offset then
-			return "<invalid unicode>"
-		end
-
-		return str:sub(1, offset - 1)
+	local offset = utf8.offset(str, count + 1)
+	if not offset then
+		return "<invalid unicode>"
 	end
 
-	local rebuiltString = {}
-	for graphemeStart, graphemeFinish in utf8.graphemes(str) do
-		local grapheme = str:sub(graphemeStart, graphemeFinish)
-		table.insert(rebuiltString, grapheme)
-		if #rebuiltString >= count then
-			return `[{table.concat(rebuiltString)}...]`
-		end
-	end
-
-	return str
+	return str:sub(1, offset - 1)
 end
 
 function Type.__call(self: Type, ...: any): (boolean, string?)
@@ -587,6 +568,7 @@ local function displayInputType(...: any?)
 
 			table.insert(inputs, GreenTea.typeof(input))
 
+			-- selene: allow(shadowing)
 			local inputStr
 			if typeof(input) == "string" then
 				inputStr = string.format("%q", input)
@@ -735,7 +717,7 @@ local function newBasicType(typeName: string, useType: boolean?)
 				typeof = if useType then nil else typeName,
 				type = if useType then typeName else nil,
 			},
-			_matches = function(input: any, ...: any)
+			_matches = function(input: any)
 				local inputType = useType and type(input) or typeof(input)
 				if inputType == typeName then
 					return Cause.ok()
@@ -743,7 +725,7 @@ local function newBasicType(typeName: string, useType: boolean?)
 					return Cause.err(self, input, `expected {typeName}, got $input`)
 				end
 			end,
-			_format = function(highlight: { [any]: string }, maxLineLength: number, recurse: { [any]: any })
+			_format = function(highlight: { [any]: string }, _maxLineLength: number, _recurse: { [any]: any })
 				return highlightWrap(typeName, highlight[self])
 			end,
 		}
@@ -763,14 +745,14 @@ function GreenTea.any(options: { allowNil: boolean? }?): any
 		any = {
 			allowNil = (allowNil or nil) :: boolean?,
 		},
-		_matches = function(input: any, ...: any?)
+		_matches = function(input: any)
 			if not allowNil and input == nil then
 				return Cause.err(self, input, "expected non-nil, got nil")
 			end
 
 			return Cause.ok()
 		end,
-		_format = function(highlight: { [any]: string }, maxLineLength: number, recurse: { [any]: any })
+		_format = function(highlight: { [any]: string }, _maxLineLength: number, _recurse: { [any]: any })
 			return highlightWrap("any", highlight[self])
 		end,
 	}
@@ -789,14 +771,14 @@ function GreenTea.unknown(options: { allowNil: boolean? }?): unknown
 		unknown = {
 			allowNil = (allowNil or nil) :: boolean?,
 		},
-		_matches = function(input: any, ...: any)
+		_matches = function(input: any)
 			if not allowNil and input == nil then
 				return Cause.err(self, input, "expected non-nil, got nil")
 			end
 
 			return Cause.ok()
 		end,
-		_format = function(highlight: { [any]: string }, maxLineLength: number, recurse: { [any]: any })
+		_format = function(highlight: { [any]: string }, _maxLineLength: number, _recurse: { [any]: any })
 			return highlightWrap("unknown", highlight[self])
 		end,
 	}
@@ -808,10 +790,10 @@ function GreenTea.never(): never
 	local self: TypeRaw
 	self = {
 		kind = "never",
-		_matches = function(input: any, ...: any)
+		_matches = function(input: any)
 			return Cause.err(self, input, "expected never, got $input")
 		end,
-		_format = function(highlight: { [any]: string }, maxLineLength: number, recurse: { [any]: any })
+		_format = function(highlight: { [any]: string }, _maxLineLength: number, _recurse: { [any]: any })
 			return highlightWrap("never", highlight[self])
 		end,
 	}
@@ -874,7 +856,7 @@ function GreenTea.coroutine(options: { status: CoroutineStatus | { CoroutineStat
 		thread = {
 			status = expectedStatusSet,
 		},
-		_matches = function(input: any, ...: any)
+		_matches = function(input: any)
 			if type(input) ~= "thread" then
 				return Cause.err(self, input, "expected thread, got $input")
 			end
@@ -893,7 +875,7 @@ function GreenTea.coroutine(options: { status: CoroutineStatus | { CoroutineStat
 
 			return Cause.ok()
 		end,
-		_format = function(highlight: { [any]: string }, maxLineLength: number, recurse: { [any]: any })
+		_format = function(highlight: { [any]: string }, _maxLineLength: number, _recurse: { [any]: any })
 			if expectedStatusSet then
 				return highlightWrap(`thread<status: {expectedStatusStr}>`, highlight[self])
 			else
@@ -915,22 +897,6 @@ end
 GreenTea.buffer = newBasicType("buffer") :: () -> buffer
 
 GreenTea.userdata = newBasicType("userdata", true) :: () -> any
-
-GreenTea.Vector2 = newBasicType("Vector2") :: () -> Vector2
-GreenTea.vector = newBasicType("vector", true) :: () -> Vector3
-GreenTea.Vector3 = newBasicType("Vector3") :: () -> Vector3
-GreenTea.CFrame = newBasicType("CFrame") :: () -> CFrame
-GreenTea.Color3 = newBasicType("Color3") :: () -> Color3
-GreenTea.UDim = newBasicType("UDim") :: () -> UDim
-GreenTea.UDim2 = newBasicType("UDim2") :: () -> UDim2
-GreenTea.Ray = newBasicType("Ray") :: () -> Ray
-GreenTea.Rect = newBasicType("Rect") :: () -> Rect
-GreenTea.Region3 = newBasicType("Region3") :: () -> Region3
-GreenTea.BrickColor = newBasicType("BrickColor") :: () -> BrickColor
-GreenTea.Font = newBasicType("Font") :: () -> Font
-
-GreenTea.Enum = newBasicType("Enum") :: () -> Enum
-GreenTea.EnumItem = newBasicType("EnumItem") :: () -> EnumItem
 
 --- Creates a new GreenTea Type that matches nil values.
 function GreenTea.none(): nil
@@ -955,14 +921,14 @@ function GreenTea.literal<T>(value: T): T
 		literal = {
 			value = value,
 		},
-		_matches = function(input: any, ...: any)
+		_matches = function(input: any)
 			if input == value then
 				return Cause.ok()
 			else
 				return Cause.err(self, input, `expected literally {literalStr}, got $input`)
 			end
 		end,
-		_format = function(highlight: { [any]: string }, maxLineLength: number, recurse: { [any]: any })
+		_format = function(highlight: { [any]: string }, _maxLineLength: number, _recurse: { [any]: any })
 			local valueStr
 			if typeof(value) == "string" then
 				valueStr = literalStr
@@ -1013,7 +979,7 @@ function GreenTea.withCustom<T>(type: T, typechecker: (any) -> (boolean, any?), 
 			name = name,
 			type = innerType,
 		},
-		_matches = function(input: any, ...: any)
+		_matches = function(input: any)
 			if innerType then
 				local cause = innerType._matches(input)
 				if not cause.ok then
@@ -1095,7 +1061,7 @@ function GreenTea.number(limits: {
 			integer = limits and limits.integer,
 			nan = limits and limits.nan,
 		},
-		_matches = function(input: any, ...: any)
+		_matches = function(input: any)
 			if typeof(input) ~= "number" then
 				return Cause.err(self, input, "expected number, got $input")
 			end
@@ -1117,7 +1083,7 @@ function GreenTea.number(limits: {
 
 			return Cause.ok()
 		end,
-		_format = function(highlight: { [any]: string }, maxLineLength: number, recurse: { [any]: any })
+		_format = function(highlight: { [any]: string }, _maxLineLength: number, _recurse: { [any]: any })
 			if not limits then
 				return highlightWrap("number", highlight[self])
 			end
@@ -1141,18 +1107,6 @@ function GreenTea.number(limits: {
 		end,
 	}
 	return setmetatable(self :: any, Type) :: any
-end
-
-local function countGraphemes(str: string): number?
-	if #str == 0 then
-		return 0
-	else
-		local count = 0
-		for _ in utf8.graphemes(str) do
-			count += 1
-		end
-		return count
-	end
 end
 
 local PATTERN_REPLACEMENTS = { ["\r"] = "\\r", ["\n"] = "\\n", ["\t"] = "\\t" }
@@ -1181,7 +1135,7 @@ function GreenTea.string(limits: {
 		)
 	end
 
-	if graphemeLengthRange and not utf8.graphemes then
+	if graphemeLengthRange then
 		error(
 			"graphemes limit is not supported on your platform (your platform does not support the utf8.graphemes function)"
 		)
@@ -1196,7 +1150,7 @@ function GreenTea.string(limits: {
 			graphemes = graphemeLengthRange,
 			unicode = limits and limits.unicode,
 		},
-		_matches = function(input: any, ...: any)
+		_matches = function(input: any)
 			if typeof(input) ~= "string" then
 				return Cause.err(self, input, "expected string, got $input")
 			end
@@ -1214,22 +1168,6 @@ function GreenTea.string(limits: {
 						`input length out of range (#input: {#input} from #{truncate(15, tostringLiteral(input))})`
 					)
 				end
-				if graphemeLengthRange then
-					local graphemeLength = countGraphemes(input)
-					if not graphemeLength then
-						return Cause.err(self, input, "input is not a valid unicode string")
-					end
-					if not checkRange(graphemeLength, graphemeLengthRange) then
-						return Cause.err(
-							self,
-							input,
-							`input length out of range (# graphemes: {graphemeLength} from {truncate(
-								15,
-								tostringLiteral(input)
-							)})`
-						)
-					end
-				end
 				if limits.pattern and not string.match(input, limits.pattern) then
 					return Cause.err(
 						self,
@@ -1241,7 +1179,7 @@ function GreenTea.string(limits: {
 
 			return Cause.ok()
 		end,
-		_format = function(highlight: { [any]: string }, maxLineLength: number, recurse: { [any]: any })
+		_format = function(highlight: { [any]: string }, _maxLineLength: number, _recurse: { [any]: any })
 			if not limits then
 				return highlightWrap("string", highlight[self])
 			end
@@ -1272,12 +1210,12 @@ function GreenTea.string(limits: {
 end
 
 --- Creates a new GreenTea Type that matches any `typeof(value)` type.
-function GreenTea.isTypeof<T>(typeName: string, value: T?): T
+function GreenTea.isTypeof<T>(typeName: string, _value: T?): T
 	return newBasicType(typeName)()
 end
 
 --- Creates a new GreenTea Type that matches any `type(value)` type.
-function GreenTea.isType<T>(typeName: string, value: T?): T
+function GreenTea.isType<T>(typeName: string, _value: T?): T
 	return newBasicType(typeName)()
 end
 
@@ -1375,6 +1313,7 @@ local function simplifyGtTuples<T...>(...: T...): T...
 	for index = 1, args.n do
 		local value: any = args[index]
 		if GreenTea.isGtType(value) then
+			-- selene: allow(shadowing)
 			local value: Type = value
 			if value.tuple then
 				if index == args.n then
@@ -1414,6 +1353,7 @@ function GreenTea.tuple<T...>(...: T...): T...
 		contents[index] = GreenTea.typeof(contents[index])
 	end
 	contents.n = nil :: any
+	-- selene: allow(shadowing)
 	local contents: { Type } = contents :: any
 
 	local vararg: Type?
@@ -1442,6 +1382,7 @@ function GreenTea.tuple<T...>(...: T...): T...
 				end
 			end
 			for index, gtType in contents do
+				-- selene: allow(shadowing)
 				local input = input[index]
 
 				local cause = gtType._matches(input)
@@ -1480,7 +1421,7 @@ function GreenTea.tuple<T...>(...: T...): T...
 			recurse[self] = true
 
 			local formatted = {}
-			for index, expectedType in ipairs(contents) do
+			for _index, expectedType in ipairs(contents) do
 				local valueStr
 				if expectedType._needsParens then
 					valueStr = `({expectedType._format(highlight, maxLineLength - 4, recurse)})`
@@ -1528,7 +1469,9 @@ function GreenTea.fn<Args..., Returns...>(args: (Args...) -> (), returns: () -> 
 	-- The extra parens above are *IMPORTANT*. They prevent some weird behavior
 	-- where Luau wants to make this function return `(Args...) -> Returns..., Args...`
 
+	-- selene: allow(shadowing)
 	local args: Type = args :: any
+	-- selene: allow(shadowing)
 	local returns: Type = returns :: any
 
 	assert(GreenTea.isGtType(args), "args must be a GreenTea type. Use GreenTea.args to specify args.")
@@ -1544,7 +1487,7 @@ function GreenTea.fn<Args..., Returns...>(args: (Args...) -> (), returns: () -> 
 			args = args,
 			returns = returns,
 		},
-		_matches = function(input: any, ...: any)
+		_matches = function(input: any)
 			if typeof(input) ~= "function" then
 				return Cause.err(self, input, "expected function")
 			end
@@ -1558,7 +1501,7 @@ function GreenTea.fn<Args..., Returns...>(args: (Args...) -> (), returns: () -> 
 			recurse[self] = true
 
 			local argsFormatted = {}
-			for index, argType in args.tuple.contents do
+			for _index, argType in args.tuple.contents do
 				table.insert(argsFormatted, argType._format(highlight, maxLineLength - 1, recurse))
 			end
 			if args.tuple.vararg then
@@ -1566,7 +1509,7 @@ function GreenTea.fn<Args..., Returns...>(args: (Args...) -> (), returns: () -> 
 			end
 
 			local returnsFormatted = {}
-			for index, returnType in returns.tuple.contents do
+			for _index, returnType in returns.tuple.contents do
 				table.insert(returnsFormatted, returnType._format(highlight, maxLineLength - 1, recurse))
 			end
 			if returns.tuple.vararg then
@@ -1720,7 +1663,7 @@ function GreenTea.table<T>(
 
 			raw = isRaw,
 		},
-		_matches = function(input: any, ...: any)
+		_matches = function(input: any)
 			if typeof(input) ~= "table" then
 				return Cause.err(self, input, "expected table")
 			end
@@ -1951,6 +1894,7 @@ local union: UnionType = function<T>(...: T): ...T
 			table.insert(nonnilTypes, value)
 		end
 	end
+	-- selene: allow(shadowing)
 	local types: { any } = types;
 	(types :: any).n = nil
 
@@ -1964,9 +1908,9 @@ local union: UnionType = function<T>(...: T): ...T
 			optional = #nilTypes > 0,
 		},
 		_needsParens = true,
-		_matches = function(input: any, ...: any)
+		_matches = function(input: any)
 			local errs = {}
-			for k, expectedType: any in types do
+			for _k, expectedType: any in types do
 				local cause = expectedType._matches(input)
 				if cause.ok then
 					return cause
@@ -2064,6 +2008,7 @@ local intersection: IntersectionType = function<T>(...: T): ...T
 		end
 		types[index] = GreenTea.typeof(types[index])
 	end
+	-- selene: allow(shadowing)
 	local types: { any } = types;
 	(types :: any).n = nil
 
@@ -2076,7 +2021,7 @@ local intersection: IntersectionType = function<T>(...: T): ...T
 			contents = types,
 		},
 		_needsParens = true,
-		_matches = function(input: any, ...: any)
+		_matches = function(input: any)
 			local errs = {}
 			local hasErrs = false
 			for _, expectedType: any in types do
@@ -2171,7 +2116,8 @@ function GreenTea.typeof<T>(value: T, recursionCheck: { [any]: any }?): T
 		)
 	end
 
-	local recursionCheck = recursionCheck or {} :: typeof(assert(recursionCheck))
+	-- selene: allow(shadowing)
+	local recursionCheck = recursionCheck or {} :: typeof(assert(recursionCheck, ""))
 
 	if typeof(value) == "table" then
 		local newTable = {}
@@ -2260,7 +2206,7 @@ function GreenTea.build<T...>(...: T...): BuiltType<T...>
 		gtType = GreenTea.typeof((castTuple(...)))
 	end
 
-	gtType.type = function(self: Type)
+	gtType.type = function(_self: Type)
 		return gtType
 	end
 	return gtType
@@ -2271,6 +2217,7 @@ end
 --- This is a shallow merge: any matching key/value pair will be overwritten,
 --- and all other key/value pairs will be kept as-is.
 function GreenTea.meta<T>(gtType: T, meta: { [string]: any }): T
+	-- selene: allow(shadowing)
 	local gtType: Type = GreenTea.typeof(gtType) :: any
 
 	gtType.meta = gtType.meta or {}
@@ -2317,6 +2264,7 @@ end
 ---   )
 ---   ```
 function GreenTea.wrapFn<T>(gtType: T, fn: T): T
+	-- selene: allow(shadowing)
 	local gtType: Type = GreenTea.typeof(gtType) :: any
 
 	assert(typeof(fn) == "function", "fn must be a function")
@@ -2332,6 +2280,7 @@ end
 --- Wraps a function with type asserts for its input args only.\
 --- See `GreenTea.wrapFn` for more information.
 function GreenTea.wrapFnArgs<T>(gtType: T, fn: T): T
+	-- selene: allow(shadowing)
 	local gtType: Type = GreenTea.typeof(gtType) :: any
 
 	assert(typeof(fn) == "function", "fn must be a function")
@@ -2347,6 +2296,7 @@ end
 --- Wraps a function with type asserts for its returns only.\
 --- See `GreenTea.wrapFn` for more information.
 function GreenTea.wrapFnReturns<T>(gtType: T, fn: T): T
+	-- selene: allow(shadowing)
 	local gtType: Type = GreenTea.typeof(gtType) :: any
 
 	assert(typeof(fn) == "function", "fn must be a function")

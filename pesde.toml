@@ -1,28 +1,17 @@
-name = "corecii/greentea"
-version = "0.4.11"
+name = "jiwonz/greentea_luau"
+version = "0.1.0"
 description = "A runtime typechecker with Luau types, pretty errors, and inspection"
-authors = ["Corecii (Shae A.) <github.com/corecii>"]
-repository = "https://github.com/Corecii/GreenTea"
+authors = ["Corecii (Shae A.) <github.com/corecii>", "jiwonz <me@jiwonz.kr>"]
+repository = "https://github.com/jiwonz/greentea-luau"
 license = "MIT"
-
-includes = [
-	"pesde.toml",
-	"README.md",
-	"CHANGELOG.md",
-	"LICENSE",
-	"src",
-	"selene.toml",
-	".luaurc",
-]
+includes = ["src/**", "pesde.toml", "LICENSE", "README.md"]
 
 [target]
-environment = "roblox"
+environment = "luau"
 lib = "src/init.luau"
-build_files = ["src"]
-
-[scripts]
-roblox_sync_config_generator = ".pesde/roblox_sync_config_generator.luau"
-sourcemap_generator = ".pesde/sourcemap_generator.luau"
 
 [indices]
 default = "https://github.com/daimond113/pesde-index"
+
+[dev_dependencies]
+luau_check = { name = "jiwonz/luau_check", version = "^0.3.5", target = "lune" }
