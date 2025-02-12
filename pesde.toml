@@ -15,3 +15,5 @@ default = "https://github.com/daimond113/pesde-index"
 
 [dev_dependencies]
 luau_check = { name = "jiwonz/luau_check", version = "^0.3.5", target = "lune" }
+multitarget = { name = "jiwonz/multitarget", version = "^0.2.6", target = "lune" }
+darklua = { name = "pesde/darklua", version = "^0.16.0", target = "lune" }
