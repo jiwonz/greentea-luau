@@ -1,0 +1,12 @@
+[settings]
+experimental = true
+
+[tools]
+"github:JohnnyMorganz/StyLua" = "latest"
+"github:JohnnyMorganz/luau-lsp" = "latest"
+"github:Kampfkarren/selene" = "latest"
+"github:seaofvoices/darklua" = "latest"
+
+[tasks.build]
+description = "Build the project for multi-target package"
+run = "pesde x jiwonz/multitarget -- build -y --luau --roblox --build-files src"
