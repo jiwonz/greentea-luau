@@ -1,4 +1,4 @@
-local lib = require("@self/src")
+local lib = require("@self/src/lib")
 
 export type Cause = lib.Cause
 export type Type = lib.Type
