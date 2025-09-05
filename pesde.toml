@@ -14,5 +14,4 @@ lib = "src/lib.luau"
 default = "https://github.com/daimond113/pesde-index"
 
 [engines]
-lune = "^0.9.0"
 pesde = "^0.7.0"
