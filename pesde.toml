@@ -5,6 +5,7 @@ authors = ["Corecii (Shae A.) <github.com/corecii>", "jiwonz <me@jiwonz.kr>"]
 repository = "https://github.com/jiwonz/greentea-luau"
 license = "MIT"
 includes = ["src/**", "pesde.toml", "LICENSE", "README.md"]
+private = true
 
 [target]
 environment = "luau"
