@@ -9,17 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.0] - 2025-09-05
 
-### Added
-
-- Add a changelog
-
 ### Changed
 
 - Upgrade to new Luau require by string semantics ([#2](https://github.com/jiwonz/greentea-luau/pull/2))
-
-### Removed
-
-- Remove Lune from pesde engines
 
 [unreleased]: https://github.com/jiwonz/greentea-luau/compare/v0.2.0...HEAD
 [0.2.0]: https://github.com/jiwonz/greentea-luau/releases/tag/v0.2.0
