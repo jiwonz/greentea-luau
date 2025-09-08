@@ -5,6 +5,7 @@ experimental = true
 "github:JohnnyMorganz/StyLua" = "latest"
 "github:JohnnyMorganz/luau-lsp" = "latest"
 "github:Kampfkarren/selene" = "latest"
+"github:luau-lang/luau" = "latest"
 "github:seaofvoices/darklua" = "latest"
 
 [tasks.build]
