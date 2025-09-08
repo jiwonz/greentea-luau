@@ -2,4 +2,5 @@
   "luau-lsp.types.definitionFiles": [
     ".d.luau"
   ],
+  "luau-lsp.platform.type": "standard"
 }
