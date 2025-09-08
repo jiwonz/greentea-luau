@@ -12,7 +12,7 @@ environment = "luau"
 lib = "src/lib.luau"
 
 [indices]
-default = "https://github.com/daimond113/pesde-index"
+default = "https://github.com/pesde-pkg/index"
 
 [engines]
 pesde = "^0.7.0"
